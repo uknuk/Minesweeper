@@ -5,30 +5,117 @@ namespace Loiste\MinesweeperBundle\Model;
 /**
  * This class represents a game model.
  */
+
+
 class Game
 {
-    /**
-     * A two dimensional array of game objects.
-     *
-     * E.x.: $gameArea[3][2] instance of GameObject
-     *
-     * @var array
-     */
-    public $gameArea;
+   
+  public function __construct($X, $Y, $pr) {
+      $this->pr = $pr;
+      $this->X = $X;
+      $this->Y = $Y;
+      $this->nCell = $X*$Y;
 
-    public function __construct()
-    {
-        // Upon constructing a new game instance, setup an empty game area.
-        $this->gameArea = array();
+      $this->neigh = array(
+		 array(-1, 1),
+		 array(0, 1),
+		 array(1, 1),
+		 array(1, 0),
+		 array(1, -1),
+		 array(0, -1),
+		 array(-1, -1),
+		 array(-1, 0));
+      
+      $this->nVis = 0;  // number of visible cells
 
-        for ($row = 0; $row < 10; $row++) {
+      $cell = array('n' => 0, 'm' => false, 'p' => 'cell', 'v' => false);
+      // number, mine, picture, visible
 
-            $temp = array();
-            for ($column = 0; $column < 20; $column++) {
-                $temp[] = new GameObject(floor(mt_rand(0, 3))); // Randomize the game object type. TODO: Change this.
-            }
+      for ($x = 0; $x < $X; $x++)
+	for ($y = 0; $y < $Y; $y++)
+	  $this->grid[$x][$y] = $cell;
 
-            $this->gameArea[] = $temp;
-        }
+      $this->msg = 'Click a cell to start';
+   }
+
+   public function get_par() {
+     return array('grid' => $this->grid,'pr' => $this->pr,
+		  'X' => $this->X, 'Y'=> $this->Y, 'msg' => $this->msg);
+   }
+   
+
+   public function play($nx, $ny) {
+
+     if (!$this->nVis)
+       $this->generate($nx, $ny);
+    
+     
+     if ($this->grid[$nx][$ny]['m']) {
+       // make all other mines visible and this mine explode
+       for ($x = 0; $x < $this->X; $x++)
+	 for ($y = 0; $y < $this->Y; $y++)
+	   if ($this->grid[$x][$y]['m'])
+	     $this->grid[$x][$y]['p'] = 'mine';
+    
+       $this->grid[$nx][$ny]['p'] = 'explosion';
+       $this->msg = 'Sorry, you lost';
+     }
+     else if (!$this->grid[$nx][$ny]['v']) {
+       $this->reveal($nx, $ny);
+       if ($this->nVis == $this->nSafe)
+	 $this->msg = 'Congratulations, you won !';
+       else
+	 $this->msg = '';
+     }
+   }
+
+   
+   private function generate($nx, $ny) {
+       $nmax = $this->pr*$this->nCell;
+       $nm = 0;
+
+       while ($nm < $nmax) {
+	 $x = mt_rand(0, $this->X-1);
+	 $y = mt_rand(0, $this->Y-1);
+	 if (($x != $nx || $y != $ny) && !$this->grid[$x][$y]['m']) {
+	   $this->grid[$x][$y]['m'] = true;
+	   $nm++;
+	 }
+       }
+       
+       $this->nSafe = $this->nCell - $nm; // cells without mines
+   }
+
+
+   private function reveal($x, $y) {
+     $this->count($x,$y);
+     $this->grid[$x][$y]['v'] = true;
+     $this->nVis++;
+
+     if (!$this->grid[$x][$y]['n']) {
+       foreach ($this->neigh as $v) {
+	 $x1 = $x + $v[0];
+	 $y1 = $y + $v[1];
+	 if ($this->inside($x1,$y1) && !$this->grid[$x1][$y1]['v'])
+	   $this->reveal($x1, $y1);
+       }
+       $this->grid[$x][$y]['p'] = 'empty';
+     }
+     else
+       $this->grid[$x][$y]['p'] = $this->grid[$x][$y]['n'];
+   }
+
+    private function count($x, $y) {
+     foreach ($this->neigh as $v) {
+	$x1 = $x + $v[0];
+        $y1 = $y + $v[1];
+	if ($this->inside($x1,$y1))
+	  $this->grid[$x][$y]['n'] += $this->grid[$x1][$y1]['m'];
+     }
+   }
+
+
+    private function inside($x,$y) {
+     return $x >= 0 && $x < $this->X && $y >= 0 && $y < $this->Y;
     }
 }

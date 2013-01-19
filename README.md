@@ -1,3 +1,16 @@
+This is a solution to Loiste's Minesweeper challenge,
+the Minesweeper game implemented within Symfony php framework.
+
+The structure proposed by Loiste is changed such that GameObject is not
+used, instead a simple hash array is used to store data for a cell including
+its picture. 
+
+Besides the mine density input required by Loiste, inputs for number of rows and
+columns are added to adjust to the browser window size.
+
+Below is original description from Loiste.
+------------------------------------------------------------------------
+
 <img src="https://raw.github.com/Loiste/Minesweeper/master/screenshot.png" />
 
 A simple Minesweeper clone to test employee candidates. This project is not finished, and it is indented to be so.
